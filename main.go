@@ -39,6 +39,8 @@ func main() {
 
 func serve(upstream string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		slog.Info("requesting artifact")
+
 		ctx := req.Context()
 
 		if req.Method != http.MethodGet {
@@ -51,7 +53,7 @@ func serve(upstream string) http.HandlerFunc {
 			return
 		}
 
-		sha := req.URL.Query().Get("sha")
+		sha := req.URL.Query().Get("sha256")
 		tag := req.URL.Query().Get("tag")
 
 		if tag == "" && sha == "" {
@@ -65,7 +67,7 @@ func serve(upstream string) http.HandlerFunc {
 		target := fmt.Sprintf("%s%s:%s", upstream, path, tag)
 
 		if sha != "" {
-			target = fmt.Sprintf("%s%s@sha:%s", upstream, path, sha)
+			target = fmt.Sprintf("%s%s@sha256:%s", upstream, path, sha)
 		}
 
 		slog.Info("fetching oci artifact", "target", target)
@@ -103,7 +105,10 @@ func serve(upstream string) http.HandlerFunc {
 }
 
 func basicAuth(expectedUsername, expectedPassword string, next http.HandlerFunc) http.HandlerFunc {
+	slog.Info("checking auth")
+
 	if expectedUsername == "" && expectedPassword == "" {
+		slog.Info("not needed")
 		return next
 	}
 
