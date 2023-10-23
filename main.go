@@ -5,7 +5,9 @@ import (
 	"crypto/subtle"
 	"flag"
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/v1/google"
 	"io"
 	"log/slog"
 	"net/http"
@@ -42,6 +44,7 @@ func serve(upstream string) http.HandlerFunc {
 		slog.Info("requesting artifact")
 
 		ctx := req.Context()
+		keychain := authn.NewMultiKeychain(google.Keychain, authn.DefaultKeychain)
 
 		if req.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -72,7 +75,7 @@ func serve(upstream string) http.HandlerFunc {
 
 		slog.Info("fetching oci artifact", "target", target)
 
-		img, err := crane.Pull(target, crane.WithContext(ctx))
+		img, err := crane.Pull(target, crane.WithContext(ctx), crane.WithAuthFromKeychain(keychain))
 		if err != nil {
 			slog.Error("error fetching resource", "err", err)
 			w.WriteHeader(http.StatusInternalServerError)
